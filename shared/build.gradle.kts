@@ -4,9 +4,10 @@ plugins {
     kotlin("multiplatform")
     id("com.android.library")
     id("kotlin-android-extensions")
+    id("maven-publish")
 }
 group = "com.jetbrains"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     gradlePluginPortal()
@@ -15,7 +16,9 @@ repositories {
     mavenCentral()
 }
 kotlin {
-    android()
+    android {
+        publishLibraryVariants()
+    }
     ios {
         binaries {
             framework {
@@ -45,6 +48,14 @@ kotlin {
         val iosMain by getting
         val iosTest by getting
     }
+    configure(listOf(targets["metadata"])) {
+        mavenPublication {
+            val targetPublication = this@mavenPublication
+            tasks.withType<AbstractPublishToMaven>()
+                .matching { it.publication == targetPublication }
+                .all { onlyIf { findProperty("isMainHost") == "true" } }
+        }
+    }
 }
 android {
     compileSdkVersion(29)
@@ -58,6 +69,18 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+        }
+    }
+}
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                groupId = "com.jetbrains"
+                artifactId = "KmmSample"
+                version = "1.0"
+                from(components["release"])
+            }
         }
     }
 }
